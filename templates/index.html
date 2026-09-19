@@ -1,0 +1,1097 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>File Metadata Analyzer</title>
+
+    <style>
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #0d1117;
+            color: white;
+        }
+
+        .container {
+            width: 92%;
+            max-width: 1400px;
+            margin: auto;
+            padding: 30px 0;
+        }
+
+        h1 {
+            text-align: center;
+            color: #4fc3f7;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #9da7b3;
+            margin-bottom: 30px;
+        }
+
+
+        /* =========================
+           SCAN SECTION
+        ========================= */
+
+        .scan-box {
+            background: #161b22;
+            padding: 25px;
+            border-radius: 12px;
+            margin-bottom: 25px;
+            border: 1px solid #30363d;
+        }
+
+        .scan-box h2 {
+            margin-top: 0;
+            color: #4fc3f7;
+        }
+
+        .scan-form {
+            display: flex;
+            gap: 10px;
+        }
+
+        .folder-input {
+            flex: 1;
+            padding: 12px;
+            background: #0d1117;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            color: white;
+            font-size: 15px;
+        }
+
+        button {
+            padding: 12px 22px;
+            background: #4fc3f7;
+            color: #0d1117;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        button:hover {
+            opacity: 0.85;
+        }
+
+        .folder-path {
+            margin-top: 15px;
+            color: #9da7b3;
+            word-break: break-all;
+        }
+
+
+        /* =========================
+           DASHBOARD CARDS
+        ========================= */
+
+        .cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 12px;
+            padding: 22px;
+            text-align: center;
+        }
+
+        .card h3 {
+            margin: 0 0 10px;
+            color: #9da7b3;
+            font-size: 15px;
+        }
+
+        .card p {
+            margin: 0;
+            color: #4fc3f7;
+            font-size: 28px;
+            font-weight: bold;
+        }
+
+
+        /* =========================
+           ANALYTICS
+        ========================= */
+
+        .analytics {
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 30px;
+        }
+
+        .analytics h2 {
+            color: #4fc3f7;
+            margin-top: 0;
+        }
+
+        .analytics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 15px;
+        }
+
+        .analytics-item {
+            background: #0d1117;
+            padding: 18px;
+            border-radius: 8px;
+            border: 1px solid #30363d;
+            text-align: center;
+        }
+
+        .analytics-item strong {
+            display: block;
+            font-size: 25px;
+            color: #4fc3f7;
+            margin-bottom: 5px;
+        }
+
+        .analytics-item span {
+            color: #9da7b3;
+        }
+
+
+        /* =========================
+           FILTER SECTION
+        ========================= */
+
+        .filter-box {
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 30px;
+        }
+
+        .filter-box h2 {
+            margin-top: 0;
+            color: #4fc3f7;
+        }
+
+        .filter-form {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            align-items: end;
+        }
+
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 7px;
+            min-width: 200px;
+        }
+
+        .filter-group label {
+            color: #9da7b3;
+            font-size: 14px;
+        }
+
+        select {
+            padding: 11px;
+            background: #0d1117;
+            color: white;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+
+
+        /* =========================
+           TABLE
+        ========================= */
+
+        .table-box {
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 12px;
+            padding: 25px;
+            overflow-x: auto;
+        }
+
+        .table-box h2 {
+            color: #4fc3f7;
+            margin-top: 0;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th {
+            text-align: left;
+            padding: 14px;
+            color: #4fc3f7;
+            border-bottom: 1px solid #30363d;
+        }
+
+        td {
+            padding: 14px;
+            border-bottom: 1px solid #21262d;
+            color: #d0d7de;
+        }
+
+        tr:hover {
+            background: #0d1117;
+        }
+
+        .file-link {
+            color: #4fc3f7;
+            text-decoration: none;
+            font-weight: bold;
+        }
+
+        .file-link:hover {
+            text-decoration: underline;
+        }
+
+        .empty {
+            text-align: center;
+            padding: 30px;
+            color: #9da7b3;
+        }
+
+
+        /* =========================
+           DUPLICATES
+        ========================= */
+
+        .duplicates {
+            margin-top: 30px;
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 12px;
+            padding: 25px;
+        }
+
+        .duplicates h2 {
+            color: #4fc3f7;
+            margin-top: 0;
+        }
+
+        .duplicate-group {
+            background: #0d1117;
+            border: 1px solid #30363d;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+
+        .duplicate-group p {
+            margin: 6px 0;
+            color: #d0d7de;
+        }
+
+
+        /* =========================
+           MOBILE
+        ========================= */
+
+        @media (max-width: 700px) {
+
+            .scan-form {
+                flex-direction: column;
+            }
+
+            .filter-form {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .filter-group {
+                width: 100%;
+            }
+
+        }
+
+    </style>
+
+</head>
+
+
+<body>
+
+
+<div class="container">
+
+
+    <!-- =========================
+         TITLE
+    ========================= -->
+
+    <h1>
+        File Metadata Analyzer
+    </h1>
+
+    <div class="subtitle">
+        Intelligent File Search & Storage Management System
+    </div>
+
+
+    <!-- =========================
+         SCAN FOLDER
+    ========================= -->
+
+    <div class="scan-box">
+
+        <h2>
+            Scan Folder
+        </h2>
+
+        <form
+            action="/scan"
+            method="POST"
+            class="scan-form"
+        >
+
+            <input
+                type="text"
+                name="folder_path"
+                class="folder-input"
+                placeholder="Enter folder path"
+                value="{{ folder_path }}"
+                required
+            >
+
+            <button type="submit">
+                Scan Folder
+            </button>
+
+        </form>
+
+
+        {% if folder_path %}
+
+        <div class="folder-path">
+
+            <strong>Current Folder:</strong>
+
+            {{ folder_path }}
+
+        </div>
+
+        {% endif %}
+
+    </div>
+
+
+    <!-- =========================
+         DASHBOARD CARDS
+    ========================= -->
+
+    <div class="cards">
+
+
+        <div class="card">
+
+            <h3>
+                Total Files
+            </h3>
+
+            <p>
+                {{ total_files }}
+            </p>
+
+        </div>
+
+
+        <div class="card">
+
+            <h3>
+                Documents
+            </h3>
+
+            <p>
+                {{ documents }}
+            </p>
+
+        </div>
+
+
+        <div class="card">
+
+            <h3>
+                Images
+            </h3>
+
+            <p>
+                {{ images }}
+            </p>
+
+        </div>
+
+
+        <div class="card">
+
+            <h3>
+                Duplicates
+            </h3>
+
+            <p>
+                {{ duplicates }}
+            </p>
+
+        </div>
+
+
+        <div class="card">
+
+            <h3>
+                Total Storage
+            </h3>
+
+            <p>
+                {{ total_storage }} MB
+            </p>
+
+        </div>
+
+
+    </div>
+
+
+    <!-- =========================
+         FILE TYPE ANALYTICS
+    ========================= -->
+
+    <div class="analytics">
+
+        <h2>
+            File Type Analytics
+        </h2>
+
+
+        <div class="analytics-grid">
+
+
+            <div class="analytics-item">
+
+                <strong>
+                    {{ document_count }}
+                </strong>
+
+                <span>
+                    Documents
+                </span>
+
+            </div>
+
+
+            <div class="analytics-item">
+
+                <strong>
+                    {{ presentation_count }}
+                </strong>
+
+                <span>
+                    Presentations
+                </span>
+
+            </div>
+
+
+            <div class="analytics-item">
+
+                <strong>
+                    {{ image_count }}
+                </strong>
+
+                <span>
+                    Images
+                </span>
+
+            </div>
+
+
+            <div class="analytics-item">
+
+                <strong>
+                    {{ other_count }}
+                </strong>
+
+                <span>
+                    Other
+                </span>
+
+            </div>
+
+
+        </div>
+
+    </div>
+
+
+    <!-- =========================
+         FILTER AND SORT
+    ========================= -->
+
+    <div class="filter-box">
+
+        <h2>
+            Filter & Sort Files
+        </h2>
+
+
+        <form
+            action="/"
+            method="GET"
+            class="filter-form"
+        >
+
+
+            <!-- FILE TYPE -->
+
+            <div class="filter-group">
+
+                <label>
+                    File Type
+                </label>
+
+
+                <select name="file_type">
+
+
+                    <option
+                        value="all"
+                        {% if selected_type == "all" %}
+                        selected
+                        {% endif %}
+                    >
+                        All Files
+                    </option>
+
+
+                    <!-- DOCUMENTS -->
+
+                    <option
+                        value="document"
+                        {% if selected_type == "document" %}
+                        selected
+                        {% endif %}
+                    >
+                        📄 Documents
+                    </option>
+
+
+                    <option
+                        value=".pdf"
+                        {% if selected_type == ".pdf" %}
+                        selected
+                        {% endif %}
+                    >
+                        PDF (.pdf)
+                    </option>
+
+
+                    <option
+                        value=".doc"
+                        {% if selected_type == ".doc" %}
+                        selected
+                        {% endif %}
+                    >
+                        Word (.doc)
+                    </option>
+
+
+                    <option
+                        value=".docx"
+                        {% if selected_type == ".docx" %}
+                        selected
+                        {% endif %}
+                    >
+                        Word (.docx)
+                    </option>
+
+
+                    <option
+                        value=".txt"
+                        {% if selected_type == ".txt" %}
+                        selected
+                        {% endif %}
+                    >
+                        Text (.txt)
+                    </option>
+
+
+                    <option
+                        value=".xls"
+                        {% if selected_type == ".xls" %}
+                        selected
+                        {% endif %}
+                    >
+                        Excel (.xls)
+                    </option>
+
+
+                    <option
+                        value=".xlsx"
+                        {% if selected_type == ".xlsx" %}
+                        selected
+                        {% endif %}
+                    >
+                        Excel (.xlsx)
+                    </option>
+
+
+                    <!-- PRESENTATIONS -->
+
+                    <option
+                        value="presentation"
+                        {% if selected_type == "presentation" %}
+                        selected
+                        {% endif %}
+                    >
+                        📊 Presentations
+                    </option>
+
+
+                    <option
+                        value=".ppt"
+                        {% if selected_type == ".ppt" %}
+                        selected
+                        {% endif %}
+                    >
+                        PowerPoint (.ppt)
+                    </option>
+
+
+                    <option
+                        value=".pptx"
+                        {% if selected_type == ".pptx" %}
+                        selected
+                        {% endif %}
+                    >
+                        PowerPoint (.pptx)
+                    </option>
+
+
+                    <!-- IMAGES -->
+
+                    <option
+                        value="image"
+                        {% if selected_type == "image" %}
+                        selected
+                        {% endif %}
+                    >
+                        🖼️ Images
+                    </option>
+
+
+                    <option
+                        value=".jpg"
+                        {% if selected_type == ".jpg" %}
+                        selected
+                        {% endif %}
+                    >
+                        JPG (.jpg)
+                    </option>
+
+
+                    <option
+                        value=".jpeg"
+                        {% if selected_type == ".jpeg" %}
+                        selected
+                        {% endif %}
+                    >
+                        JPEG (.jpeg)
+                    </option>
+
+
+                    <option
+                        value=".png"
+                        {% if selected_type == ".png" %}
+                        selected
+                        {% endif %}
+                    >
+                        PNG (.png)
+                    </option>
+
+
+                    <option
+                        value=".gif"
+                        {% if selected_type == ".gif" %}
+                        selected
+                        {% endif %}
+                    >
+                        GIF (.gif)
+                    </option>
+
+
+                    <option
+                        value=".bmp"
+                        {% if selected_type == ".bmp" %}
+                        selected
+                        {% endif %}
+                    >
+                        BMP (.bmp)
+                    </option>
+
+
+                    <!-- OTHER -->
+
+                    <option
+                        value="other"
+                        {% if selected_type == "other" %}
+                        selected
+                        {% endif %}
+                    >
+                        📦 Other File Types
+                    </option>
+
+
+                </select>
+
+            </div>
+
+
+            <!-- SORT BY -->
+
+            <div class="filter-group">
+
+                <label>
+                    Sort By
+                </label>
+
+
+                <select name="sort">
+
+
+                    <option
+                        value="name"
+                        {% if selected_sort == "name" %}
+                        selected
+                        {% endif %}
+                    >
+                        File Name
+                    </option>
+
+
+                    <option
+                        value="size"
+                        {% if selected_sort == "size" %}
+                        selected
+                        {% endif %}
+                    >
+                        File Size
+                    </option>
+
+
+                    <option
+                        value="modified"
+                        {% if selected_sort == "modified" %}
+                        selected
+                        {% endif %}
+                    >
+                        Modified Date
+                    </option>
+
+
+                    <option
+                        value="age"
+                        {% if selected_sort == "age" %}
+                        selected
+                        {% endif %}
+                    >
+                        File Age
+                    </option>
+
+
+                </select>
+
+            </div>
+
+
+            <!-- ORDER -->
+
+            <div class="filter-group">
+
+                <label>
+                    Order
+                </label>
+
+
+                <select name="direction">
+
+
+                    <option
+                        value="asc"
+                        {% if selected_direction == "asc" %}
+                        selected
+                        {% endif %}
+                    >
+                        Ascending
+                    </option>
+
+
+                    <option
+                        value="desc"
+                        {% if selected_direction == "desc" %}
+                        selected
+                        {% endif %}
+                    >
+                        Descending
+                    </option>
+
+
+                </select>
+
+            </div>
+
+
+            <!-- APPLY -->
+
+            <div class="filter-group">
+
+                <button type="submit">
+                    Apply
+                </button>
+
+            </div>
+
+
+        </form>
+
+    </div>
+
+
+    <!-- =========================
+         FILE TABLE
+    ========================= -->
+
+    <div class="table-box">
+
+        <h2>
+            Files
+        </h2>
+
+
+        {% if files %}
+
+
+        <table>
+
+            <thead>
+
+                <tr>
+
+                    <th>
+                        File Name
+                    </th>
+
+                    <th>
+                        Type
+                    </th>
+
+                    <th>
+                        Size
+                    </th>
+
+                    <th>
+                        Size Category
+                    </th>
+
+                    <th>
+                        Modified
+                    </th>
+
+                    <th>
+                        Age
+                    </th>
+
+                </tr>
+
+            </thead>
+
+
+            <tbody>
+
+
+                {% for file in files %}
+
+
+                <tr>
+
+
+                    <td>
+
+                        <a
+                            href="{{ url_for('details', file_id=file.id) }}"
+                            class="file-link"
+                        >
+                            {{ file.name }}
+                        </a>
+
+                    </td>
+
+
+                    <td>
+                        {{ file.type }}
+                    </td>
+
+
+                    <td>
+                        {{ file.size }}
+                    </td>
+
+
+                    <td>
+                        {{ file.size_category }}
+                    </td>
+
+
+                    <td>
+                        {{ file.modified }}
+                    </td>
+
+
+                    <td>
+                        {{ file.age }} days
+                    </td>
+
+
+                </tr>
+
+
+                {% endfor %}
+
+
+            </tbody>
+
+        </table>
+
+
+        {% else %}
+
+
+        <div class="empty">
+
+            No files found.
+
+        </div>
+
+
+        {% endif %}
+
+
+    </div>
+
+
+    <!-- =========================
+         DUPLICATE FILES
+    ========================= -->
+
+    {% if duplicate_groups %}
+
+
+    <div class="duplicates">
+
+        <h2>
+            Duplicate Files
+        </h2>
+
+
+        {% for group in duplicate_groups %}
+
+
+        <div class="duplicate-group">
+
+
+            <p>
+                <strong>
+                    Duplicate Group
+                </strong>
+            </p>
+
+
+            <p>
+                Hash:
+                {{ group.hash }}
+            </p>
+
+
+            {% for file in group.files %}
+
+
+            <p>
+
+                📄
+
+                <a
+                    href="{{ url_for('details', file_id=file.id) }}"
+                    class="file-link"
+                >
+                    {{ file.name }}
+                </a>
+
+                —
+                {{ file.size }}
+
+            </p>
+
+
+            {% endfor %}
+
+
+        </div>
+
+
+        {% endfor %}
+
+
+    </div>
+
+
+    {% endif %}
+
+
+</div>
+
+
+<!-- =========================
+     REFRESH RESET
+========================= -->
+
+<script>
+
+    const navigation =
+        performance.getEntriesByType("navigation")[0];
+
+
+    if (
+        navigation &&
+        navigation.type === "reload"
+    ) {
+
+        window.location.replace(
+            "/?reset=1"
+        );
+
+    }
+
+</script>
+
+
+</body>
+
+</html>

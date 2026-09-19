@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>File Details</title>
+
+    <style>
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #0d1117;
+            color: white;
+        }
+
+        .container {
+            width: 90%;
+            max-width: 900px;
+            margin: auto;
+            padding: 50px 0;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 35px;
+        }
+
+        .details-box {
+            background: #161b22;
+            padding: 30px;
+            border-radius: 12px;
+        }
+
+        .detail-row {
+            display: flex;
+            justify-content: space-between;
+            gap: 30px;
+            padding: 18px 0;
+            border-bottom: 1px solid #30363d;
+        }
+
+        .detail-row:last-child {
+            border-bottom: none;
+        }
+
+        .label {
+            color: #9aa4b2;
+            font-weight: bold;
+        }
+
+        .value {
+            color: #d0d7de;
+            text-align: right;
+            word-break: break-word;
+        }
+
+        .hash {
+            font-size: 12px;
+            max-width: 500px;
+        }
+
+        .back-button {
+            display: inline-block;
+            margin-top: 25px;
+            padding: 12px 20px;
+            background: #1f6feb;
+            color: white;
+            text-decoration: none;
+            border-radius: 6px;
+        }
+
+        .back-button:hover {
+            opacity: 0.9;
+        }
+
+        @media (max-width: 600px) {
+
+            .detail-row {
+                flex-direction: column;
+                gap: 8px;
+            }
+
+            .value {
+                text-align: left;
+            }
+
+        }
+
+    </style>
+
+</head>
+
+
+<body>
+
+    <div class="container">
+
+        <h1>File Details</h1>
+
+        <div class="details-box">
+
+            <div class="detail-row">
+
+                <span class="label">
+                    File Name
+                </span>
+
+                <span class="value">
+                    {{ file.name }}
+                </span>
+
+            </div>
+
+
+            <div class="detail-row">
+
+                <span class="label">
+                    File Type
+                </span>
+
+                <span class="value">
+                    {{ file.type }}
+                </span>
+
+            </div>
+
+
+            <div class="detail-row">
+
+                <span class="label">
+                    File Size
+                </span>
+
+                <span class="value">
+                    {{ file.size }}
+                </span>
+
+            </div>
+
+
+            <div class="detail-row">
+
+                <span class="label">
+                    Size Category
+                </span>
+
+                <span class="value">
+                    {{ file.size_category }}
+                </span>
+
+            </div>
+
+
+            <div class="detail-row">
+
+                <span class="label">
+                    Created Date
+                </span>
+
+                <span class="value">
+                    {{ file.created }}
+                </span>
+
+            </div>
+
+
+            <div class="detail-row">
+
+                <span class="label">
+                    Modified Date
+                </span>
+
+                <span class="value">
+                    {{ file.modified }}
+                </span>
+
+            </div>
+
+
+            <div class="detail-row">
+
+                <span class="label">
+                    Last Accessed
+                </span>
+
+                <span class="value">
+                    {{ file.accessed }}
+                </span>
+
+            </div>
+
+
+            <div class="detail-row">
+
+                <span class="label">
+                    File Age
+                </span>
+
+                <span class="value">
+                    {{ file.age }} days
+                </span>
+
+            </div>
+
+
+            <div class="detail-row">
+
+                <span class="label">
+                    File Location
+                </span>
+
+                <span class="value">
+                    {{ file.path }}
+                </span>
+
+            </div>
+
+
+            <div class="detail-row">
+
+                <span class="label">
+                    File Hash
+                </span>
+
+                <span class="value hash">
+                    {{ file.hash }}
+                </span>
+
+            </div>
+
+
+            <a href="/" class="back-button">
+                ← Back to Dashboard
+            </a>
+
+        </div>
+
+    </div>
+
+</body>
+
+</html>
