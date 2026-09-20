@@ -104,11 +104,24 @@
         /* Dashboard Cards */
 
         .dashboard {
-            display: grid;
-            grid-template-columns: repeat(5, 1fr);
-            gap: 15px;
-            margin-bottom: 30px;
-        }
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 18px;
+    margin-bottom: 30px;
+}
+
+.dashboard .card {
+    background: linear-gradient(145deg, #161b22, #11161d);
+    border: 1px solid #30363d;
+    border-radius: 14px;
+    padding: 22px;
+    transition: transform 0.2s ease, border-color 0.2s ease;
+}
+
+.dashboard .card:hover {
+    transform: translateY(-3px);
+    border-color: #4fc3f7;
+}
 
         .card {
             background: #161b22;
