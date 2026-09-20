@@ -1,14 +1,7 @@
-from flask import Flask, render_template, request, redirect, session
-import sys
+from flask import Flask, render_template, request, redirect
 import os
-import sqlite3
-from datetime import datetime
-
-project_folder = os.path.dirname(
-    os.path.dirname(os.path.abspath(__file__))
-)
-
-sys.path.append(project_folder)
+import hashlib
+from werkzeug.utils import secure_filename
 
 from database.database import (
     create_database,
@@ -16,15 +9,38 @@ from database.database import (
     get_all_files
 )
 
-from app.scanner import scan_folder
-
+# --------------------------------------------------
+# FLASK APP
+# --------------------------------------------------
 
 app = Flask(
     __name__,
-    template_folder="../templates"
+    template_folder="../templates",
+    static_folder="../static"
 )
 
-app.secret_key = "file_metadata_secret_key"
+# --------------------------------------------------
+# PROJECT PATHS
+# --------------------------------------------------
+
+PROJECT_FOLDER = os.path.dirname(
+    os.path.dirname(
+        os.path.abspath(__file__)
+    )
+)
+
+DATABASE_PATH = os.path.join(
+    PROJECT_FOLDER,
+    "database",
+    "files.db"
+)
+
+UPLOAD_FOLDER = os.path.join(
+    PROJECT_FOLDER,
+    "scanned_files"
+)
+
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 create_database()
 
@@ -35,536 +51,519 @@ create_database()
 
 def clear_database():
 
-    database_path = os.path.join(
-        project_folder,
-        "database",
-        "files.db"
-    )
+    import sqlite3
 
-    connection = sqlite3.connect(
-        database_path
-    )
-
+    connection = sqlite3.connect(DATABASE_PATH)
     cursor = connection.cursor()
 
-    cursor.execute(
-        "DELETE FROM files"
-    )
+    cursor.execute("DELETE FROM files")
 
     connection.commit()
-
     connection.close()
 
 
 # --------------------------------------------------
-# GET FILE CATEGORY
+# FILE CATEGORY
 # --------------------------------------------------
 
 def get_category(file_type):
 
-    file_type = file_type.lower()
+    extension = file_type.lower()
 
-    if file_type in [
+    document_extensions = {
         ".pdf",
         ".doc",
         ".docx",
         ".txt",
         ".xls",
-        ".xlsx"
-    ]:
-        return "document"
+        ".xlsx",
+        ".csv"
+    }
 
-    elif file_type in [
+    presentation_extensions = {
         ".ppt",
         ".pptx"
-    ]:
-        return "presentation"
+    }
 
-    elif file_type in [
+    image_extensions = {
         ".jpg",
         ".jpeg",
         ".png",
         ".gif",
-        ".bmp"
-    ]:
-        return "image"
+        ".bmp",
+        ".webp",
+        ".svg"
+    }
+
+    if extension in document_extensions:
+        return "Documents"
+
+    elif extension in presentation_extensions:
+        return "Presentations"
+
+    elif extension in image_extensions:
+        return "Images"
 
     else:
-        return "other"
+        return "Other"
+
+
+# --------------------------------------------------
+# FORMAT FILE SIZE
+# --------------------------------------------------
+
+def format_size(size):
+
+    if size < 1024:
+        return f"{size} B"
+
+    elif size < 1024 * 1024:
+        return f"{size / 1024:.2f} KB"
+
+    elif size < 1024 * 1024 * 1024:
+        return f"{size / (1024 * 1024):.2f} MB"
+
+    else:
+        return f"{size / (1024 * 1024 * 1024):.2f} GB"
+
+
+# --------------------------------------------------
+# FILE HASH
+# --------------------------------------------------
+
+def calculate_file_hash(file_path):
+
+    sha256 = hashlib.sha256()
+
+    with open(file_path, "rb") as file:
+
+        while True:
+
+            data = file.read(65536)
+
+            if not data:
+                break
+
+            sha256.update(data)
+
+    return sha256.hexdigest()
+
+
+# --------------------------------------------------
+# CREATE FILE INFORMATION
+# --------------------------------------------------
+
+def create_uploaded_file_info(
+    file_path,
+    file_name
+):
+
+    from datetime import datetime
+
+    file_size = os.path.getsize(file_path)
+
+    created_timestamp = os.path.getctime(
+        file_path
+    )
+
+    modified_timestamp = os.path.getmtime(
+        file_path
+    )
+
+    accessed_timestamp = os.path.getatime(
+        file_path
+    )
+
+    created_date = datetime.fromtimestamp(
+        created_timestamp
+    ).strftime("%Y-%m-%d %H:%M:%S")
+
+    modified_date = datetime.fromtimestamp(
+        modified_timestamp
+    ).strftime("%Y-%m-%d %H:%M:%S")
+
+    accessed_date = datetime.fromtimestamp(
+        accessed_timestamp
+    ).strftime("%Y-%m-%d %H:%M:%S")
+
+    file_extension = os.path.splitext(
+        file_name
+    )[1].lower()
+
+    file_hash = calculate_file_hash(
+        file_path
+    )
+
+    return {
+        "file_name": file_name,
+        "file_type": file_extension,
+        "file_size": file_size,
+        "created_date": created_date,
+        "modified_date": modified_date,
+        "accessed_date": accessed_date,
+        "file_path": file_path,
+        "file_hash": file_hash
+    }
 
 
 # --------------------------------------------------
 # PREPARE FILE DATA
 # --------------------------------------------------
 
-def prepare_file_data(file):
-
-    current_time = datetime.now()
-
-    try:
-
-        modified_date = datetime.strptime(
-            file[5],
-            "%Y-%m-%d %H:%M:%S"
-        )
-
-        age = (
-            current_time - modified_date
-        ).days
-
-    except Exception:
-
-        age = 0
-
-
-    file_size = file[3]
-
-
-    if file_size < 1024:
-
-        readable_size = f"{file_size} B"
-
-    elif file_size < 1024 * 1024:
-
-        readable_size = f"{round(file_size / 1024, 2)} KB"
-
-    else:
-
-        readable_size = f"{round(file_size / (1024 * 1024), 2)} MB"
-
-
-    if file_size < 1 * 1024 * 1024:
-
-        size_category = "Small"
-
-    elif file_size <= 10 * 1024 * 1024:
-
-        size_category = "Medium"
-
-    else:
-
-        size_category = "Large"
-
+def prepare_file_data(database_file):
 
     return {
-        "id": file[0],
-        "name": file[1],
-        "type": file[2],
-        "size": readable_size,
-        "size_category": size_category,
-        "created": file[4],
-        "modified": file[5],
-        "accessed": file[6],
-        "path": file[7],
-        "hash": file[8],
-        "age": age,
-        "category": get_category(file[2])
+        "id": database_file[0],
+        "file_name": database_file[1],
+        "file_type": database_file[2],
+        "file_size": database_file[3],
+        "readable_size": format_size(
+            database_file[3]
+        ),
+        "created_date": database_file[4],
+        "modified_date": database_file[5],
+        "accessed_date": database_file[6],
+        "file_path": database_file[7],
+        "file_hash": database_file[8],
+        "category": get_category(
+            database_file[2]
+        )
     }
 
 
 # --------------------------------------------------
-# HOME PAGE
+# HOME / DASHBOARD
 # --------------------------------------------------
 
 @app.route("/")
 def home():
 
-    # Reset dashboard after actual browser refresh
-    if request.args.get("reset") == "1":
+    # Manual reset
+    if request.args.get("reset") is not None:
 
         clear_database()
 
-        session["folder_path"] = ""
+        return redirect("/")
 
+    database_files = get_all_files()
 
-    # Get all files
-    all_files = get_all_files()
-
-    files = all_files.copy()
-
+    files = [
+        prepare_file_data(file)
+        for file in database_files
+    ]
 
     # --------------------------------------------------
-    # FILE TYPE / CATEGORY FILTER
+    # FILTERS
     # --------------------------------------------------
 
-    selected_type = request.args.get(
-        "file_type",
-        "all"
-    ).lower()
+    category_filter = request.args.get(
+        "category",
+        "All"
+    )
 
+    extension_filter = request.args.get(
+        "extension",
+        "All"
+    )
 
-    if selected_type != "all":
+    if category_filter != "All":
 
-        filtered_files = []
+        files = [
+            file
+            for file in files
+            if file["category"] == category_filter
+        ]
 
-        for file in files:
+    if extension_filter != "All":
 
-            file_extension = file[2].lower()
-
-            file_category = get_category(
-                file_extension
-            )
-
-
-            # Specific extension
-            if selected_type.startswith("."):
-
-                if file_extension == selected_type:
-
-                    filtered_files.append(file)
-
-
-            # Category
-            else:
-
-                if file_category == selected_type:
-
-                    filtered_files.append(file)
-
-
-        files = filtered_files
-
+        files = [
+            file
+            for file in files
+            if file["file_type"] == extension_filter
+        ]
 
     # --------------------------------------------------
     # SORTING
     # --------------------------------------------------
 
-    selected_sort = request.args.get(
+    sort_by = request.args.get(
         "sort",
         "name"
-    ).lower()
+    )
 
-
-    selected_direction = request.args.get(
-        "direction",
+    order = request.args.get(
+        "order",
         "asc"
-    ).lower()
-
-
-    reverse_order = (
-        selected_direction == "desc"
     )
 
-
-    if selected_sort == "name":
-
-        files.sort(
-            key=lambda file: file[1].lower(),
-            reverse=reverse_order
-        )
-
-
-    elif selected_sort == "size":
+    if sort_by == "name":
 
         files.sort(
-            key=lambda file: file[3],
-            reverse=reverse_order
+            key=lambda x: x["file_name"].lower()
         )
 
-
-    elif selected_sort == "modified":
+    elif sort_by == "size":
 
         files.sort(
-            key=lambda file: file[5],
-            reverse=reverse_order
+            key=lambda x: x["file_size"]
         )
 
-
-    elif selected_sort == "age":
+    elif sort_by == "modified":
 
         files.sort(
-            key=lambda file: (
-                datetime.strptime(
-                    file[5],
-                    "%Y-%m-%d %H:%M:%S"
-                )
-                if file[5]
-                else datetime.min
-            ),
-            reverse=reverse_order
+            key=lambda x: x["modified_date"]
         )
 
+    elif sort_by == "age":
+
+        files.sort(
+            key=lambda x: x["created_date"]
+        )
+
+    if order == "desc":
+
+        files.reverse()
 
     # --------------------------------------------------
-    # DOCUMENT / IMAGE COUNTS
+    # DASHBOARD COUNTS
     # --------------------------------------------------
 
-    documents = 0
-    images = 0
+    total_files = len(files)
 
+    total_size_bytes = sum(
+        file["file_size"]
+        for file in files
+    )
+
+    total_size = format_size(
+        total_size_bytes
+    )
+
+    documents_count = sum(
+        1
+        for file in files
+        if file["category"] == "Documents"
+    )
+
+    presentations_count = sum(
+        1
+        for file in files
+        if file["category"] == "Presentations"
+    )
+
+    images_count = sum(
+        1
+        for file in files
+        if file["category"] == "Images"
+    )
+
+    other_count = sum(
+        1
+        for file in files
+        if file["category"] == "Other"
+    )
+
+    # --------------------------------------------------
+    # FILE TYPE DISTRIBUTION
+    # --------------------------------------------------
+
+    file_type_distribution = {}
 
     for file in files:
 
-        category = get_category(
-            file[2]
+        extension = file["file_type"]
+
+        if extension == "":
+            extension = "No Extension"
+
+        file_type_distribution[extension] = (
+            file_type_distribution.get(
+                extension,
+                0
+            ) + 1
         )
 
-
-        if category in [
-            "document",
-            "presentation"
-        ]:
-
-            documents += 1
-
-
-        if category == "image":
-
-            images += 1
-
-
     # --------------------------------------------------
-    # FILE TYPE ANALYTICS
-    # --------------------------------------------------
-
-    document_count = 0
-    presentation_count = 0
-    image_count = 0
-    other_count = 0
-
-
-    for file in files:
-
-        category = get_category(
-            file[2]
-        )
-
-
-        if category == "document":
-
-            document_count += 1
-
-
-        elif category == "presentation":
-
-            presentation_count += 1
-
-
-        elif category == "image":
-
-            image_count += 1
-
-
-        else:
-
-            other_count += 1
-
-
-    # --------------------------------------------------
-    # TOTAL STORAGE
-    # --------------------------------------------------
-
-    total_storage_bytes = 0
-
-
-    for file in files:
-
-        total_storage_bytes += file[3]
-
-
-    total_storage_mb = (
-        total_storage_bytes /
-        (1024 * 1024)
-    )
-
-
-    total_storage_mb = round(
-        total_storage_mb,
-        2
-    )
-
-
-    # --------------------------------------------------
-    # DUPLICATE DETECTION
+    # DUPLICATE FILES
     # --------------------------------------------------
 
     hash_groups = {}
 
-
     for file in files:
 
-        file_hash = file[8]
+        file_hash = file["file_hash"]
 
+        if file_hash not in hash_groups:
 
-        if file_hash:
+            hash_groups[file_hash] = []
 
-            if file_hash not in hash_groups:
+        hash_groups[file_hash].append(file)
 
-                hash_groups[file_hash] = []
+    duplicate_groups = [
+        group
+        for group in hash_groups.values()
+        if len(group) > 1
+    ]
 
-
-            hash_groups[file_hash].append(file)
-
-
-    duplicate_count = 0
-    duplicate_groups = []
-
-
-    for file_hash, group in hash_groups.items():
-
-        if len(group) > 1:
-
-            duplicate_count += (
-                len(group) - 1
-            )
-
-
-            duplicate_files = []
-
-
-            for file in group:
-
-                duplicate_files.append(
-                    prepare_file_data(file)
-                )
-
-
-            duplicate_groups.append({
-
-                "hash": file_hash,
-
-                "files": duplicate_files
-
-            })
-
+    duplicate_count = sum(
+        len(group)
+        for group in duplicate_groups
+    )
 
     # --------------------------------------------------
-    # PREPARE FILE DATA
+    # EXTENSIONS
     # --------------------------------------------------
 
-    file_data = []
-
-
-    for file in files:
-
-        file_data.append(
-            prepare_file_data(file)
+    extensions = sorted(
+        set(
+            file["file_type"]
+            for file in files
+            if file["file_type"]
         )
-
+    )
 
     # --------------------------------------------------
-    # SEND DATA TO HTML
+    # RENDER PAGE
     # --------------------------------------------------
 
     return render_template(
-
         "index.html",
 
-        files=file_data,
+        files=files,
 
-        total_files=len(file_data),
+        total_files=total_files,
 
-        documents=documents,
+        total_size=total_size,
 
-        images=images,
+        documents_count=documents_count,
 
-        duplicates=duplicate_count,
+        presentations_count=presentations_count,
 
-        total_storage=total_storage_mb,
-
-        duplicate_groups=duplicate_groups,
-
-        selected_type=selected_type,
-
-        selected_sort=selected_sort,
-
-        selected_direction=selected_direction,
-
-        document_count=document_count,
-
-        presentation_count=presentation_count,
-
-        image_count=image_count,
+        images_count=images_count,
 
         other_count=other_count,
 
-        folder_path=session.get(
-            "folder_path",
-            ""
-        )
+        file_type_distribution=file_type_distribution,
+
+        duplicate_groups=duplicate_groups,
+
+        duplicate_count=duplicate_count,
+
+        category_filter=category_filter,
+
+        extension_filter=extension_filter,
+
+        extensions=extensions,
+
+        sort_by=sort_by,
+
+        order=order
     )
 
 
 # --------------------------------------------------
-# DETAILS PAGE
+# FILE DETAILS
 # --------------------------------------------------
 
 @app.route("/details/<int:file_id>")
 def details(file_id):
 
-    files = get_all_files()
+    database_files = get_all_files()
 
     selected_file = None
 
+    for database_file in database_files:
 
-    for file in files:
+        if database_file[0] == file_id:
 
-        if file[0] == file_id:
-
-            selected_file = file
+            selected_file = prepare_file_data(
+                database_file
+            )
 
             break
 
-
     if selected_file is None:
 
-        return "File not found."
-
-
-    file_data = prepare_file_data(
-        selected_file
-    )
-
+        return "File not found", 404
 
     return render_template(
         "details.html",
-        file=file_data
+        file=selected_file
     )
 
 
 # --------------------------------------------------
-# SCAN FOLDER
+# SCAN / UPLOAD FOLDER
 # --------------------------------------------------
 
-@app.route(
-    "/scan",
-    methods=["POST"]
-)
+@app.route("/scan", methods=["POST"])
 def scan():
 
-    folder_path = request.form.get(
-        "folder_path"
+    # Start every folder analysis fresh.
+    # This prevents 6 -> 12 -> 18.
+    clear_database()
+
+    uploaded_files = request.files.getlist(
+        "files"
     )
 
+    for uploaded_file in uploaded_files:
 
-    if not folder_path:
+        if uploaded_file.filename == "":
+            continue
 
-        return "Please enter a folder path."
+        original_name = os.path.basename(
+            uploaded_file.filename
+        )
 
+        safe_name = secure_filename(
+            original_name
+        )
 
-    if not os.path.exists(folder_path):
+        if not safe_name:
+            continue
 
-        return "Folder does not exist."
+        save_path = os.path.join(
+            UPLOAD_FOLDER,
+            safe_name
+        )
 
+        # Prevent overwriting
+        counter = 1
 
-    scanned_files = scan_folder(
-        folder_path
-    )
+        base_name, extension = os.path.splitext(
+            safe_name
+        )
 
+        while os.path.exists(save_path):
 
-    session["folder_path"] = folder_path
+            safe_name = (
+                f"{base_name}_{counter}{extension}"
+            )
 
+            save_path = os.path.join(
+                UPLOAD_FOLDER,
+                safe_name
+            )
 
-    for file_info in scanned_files:
+            counter += 1
+
+        uploaded_file.save(
+            save_path
+        )
+
+        file_info = create_uploaded_file_info(
+            save_path,
+            safe_name
+        )
 
         add_file(file_info)
-
 
     return redirect("/")
 
 
 # --------------------------------------------------
-# RUN APPLICATION
+# START APPLICATION
 # --------------------------------------------------
 
 if __name__ == "__main__":
