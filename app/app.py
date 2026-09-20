@@ -16,7 +16,7 @@ from database.database import (
     get_all_files
 )
 
-from scanner import scan_folder
+from app.scanner import scan_folder
 
 
 app = Flask(
