@@ -32,12 +32,14 @@
         h1 {
             text-align: center;
             margin-bottom: 35px;
+            color: #4fc3f7;
         }
 
         .details-box {
             background: #161b22;
             padding: 30px;
             border-radius: 12px;
+            border: 1px solid #30363d;
         }
 
         .detail-row {
@@ -48,7 +50,7 @@
             border-bottom: 1px solid #30363d;
         }
 
-        .detail-row:last-child {
+        .detail-row:last-of-type {
             border-bottom: none;
         }
 
@@ -115,7 +117,7 @@
                 </span>
 
                 <span class="value">
-                    {{ file.name }}
+                    {{ file.file_name }}
                 </span>
 
             </div>
@@ -128,7 +130,7 @@
                 </span>
 
                 <span class="value">
-                    {{ file.type }}
+                    {{ file.file_type }}
                 </span>
 
             </div>
@@ -141,7 +143,7 @@
                 </span>
 
                 <span class="value">
-                    {{ file.size }}
+                    {{ file.readable_size }}
                 </span>
 
             </div>
@@ -150,11 +152,11 @@
             <div class="detail-row">
 
                 <span class="label">
-                    Size Category
+                    Category
                 </span>
 
                 <span class="value">
-                    {{ file.size_category }}
+                    {{ file.category }}
                 </span>
 
             </div>
@@ -167,7 +169,7 @@
                 </span>
 
                 <span class="value">
-                    {{ file.created }}
+                    {{ file.created_date }}
                 </span>
 
             </div>
@@ -180,7 +182,7 @@
                 </span>
 
                 <span class="value">
-                    {{ file.modified }}
+                    {{ file.modified_date }}
                 </span>
 
             </div>
@@ -193,20 +195,7 @@
                 </span>
 
                 <span class="value">
-                    {{ file.accessed }}
-                </span>
-
-            </div>
-
-
-            <div class="detail-row">
-
-                <span class="label">
-                    File Age
-                </span>
-
-                <span class="value">
-                    {{ file.age }} days
+                    {{ file.accessed_date }}
                 </span>
 
             </div>
@@ -219,7 +208,7 @@
                 </span>
 
                 <span class="value">
-                    {{ file.path }}
+                    {{ file.file_path }}
                 </span>
 
             </div>
@@ -232,7 +221,7 @@
                 </span>
 
                 <span class="value hash">
-                    {{ file.hash }}
+                    {{ file.file_hash }}
                 </span>
 
             </div>
